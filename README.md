@@ -13,9 +13,9 @@ Advanced Flight Computer with Triple MCU Architecture
 
 <div align="center">
 
-![C](https://img.shields.io/badge/C-%23A8B9CC.svg?style=for-the-badge&logo=c&logoColor=white)
-![STM32](https://img.shields.io/badge/STM32-%23A8B9CC.svg?style=for-the-badge&logo=stmicroelectronics&logoColor=white)
-![EasyEDA](https://img.shields.io/badge/EasyEDA-%23FF6B35.svg?style=for-the-badge&logo=easyeda&logoColor=white)
+![C](https://img.shields.io/badge/C-%2300599C.svg?style=for-the-badge&logo=c&logoColor=white)
+![STM32](https://img.shields.io/badge/STM32-%23FFD200.svg?style=for-the-badge&logo=stmicroelectronics&logoColor=white)
+![EasyEDA](https://img.shields.io/badge/EasyEDA-%230F66DC.svg?style=for-the-badge&logo=easyeda&logoColor=white)
 
 </div>
 
