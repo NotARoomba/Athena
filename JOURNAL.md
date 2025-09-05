@@ -1,3 +1,11 @@
+---
+title: "Athena"
+author: "Nathan Alspaugh (NotARoomba)"
+description: "Advanced Flight Computer with Triple MCU Architecture"
+created_at: "2025-08-09"
+time_spent: ~107 Hours
+---
+
 # August 9: Planning
 
 I wanted a general purpose flight computer that has at least 6 pyro channels, 6 PWM channels (2 TVC, 4 Fins), GNSS (bluetooth maybe), LoRa for telemetry to ground, 7.4v LiPo battery, buck converter to 5v and 3.3v. I wanted this to be the most overkill possible so I added 3 MCU's with various tasks.
@@ -46,6 +54,8 @@ After selecting the components that I wanted, I began to add them to EasyEDA. I 
 
 ![MCU Start](assets/mcu_start.png)
 
+**Total Time:** 5 hours
+
 # August 10-11: More Component Placement
 
 After the STM's were complete, I decided to work on the peripherals and power before going back and wiring them. So I started work on USB-C Power Delivery.
@@ -60,11 +70,15 @@ After that, I started working on the buck and boost converters and ended up choo
 
 ![CONVERTERS](assets/converters.png)
 
+**Total Time:** 12 hours
+
 # August 12: Sensors
 
 I didn't have much time today, so I wanted to work on the sensors to at least finish something and wired them all up, making sure that they each have their own SDA line for fast data transfer.
 
 ![SENSORS](assets/sensors.png)
+
+**Total Time:** 4 hours
 
 # August 14: Servos and Realization
 
@@ -72,11 +86,15 @@ I started placing the servos, but I wanted to double check my math as I had some
 
 ![SENSORS](assets/new_5v.png)
 
+**Total Time:** 6 hours
+
 # August 15-17: Peripherals
 
 I spent the next 2 days drawing the schematics of all of the peripherals: GPS, LoRa, Bluetooth, SD card, USB hub, CAN transceiver, and also flash memory. I was grinding through it and forgot to take photos, but here's the final design. I also included the pyro channels using fuses to protect them and connecting them directly to the 12V battery.
 
 ![SENSORS](assets/peripherals_final.png)
+
+**Total Time:** 16 hours
 
 # August 18: Start of placement
 
@@ -84,15 +102,21 @@ I started the placement with the STM's, and as I wanted to base my design off of
 
 ![SENSORS](assets/stm_start.png)
 
+**Total Time:** 8 hours
+
 # August 20: Grouping
 
 I started working on grouping all of the components together with their respective caps and stuff to get a view of where to place them. It took a while, especially because of the power as it needed special planes that I had to take into account, so I decided to upgrade the board from 4 layers to 6 layers and have a dedicated power plane.
+
+**Total Time:** 6 hours
 
 # August 23: Procrastination and Power Section
 
 After grouping all of the components, I decided that I wanted the board to be 80x140mm, so I created the outline and then started adding the components along the borders. I procrastinated this step a lot and in reality this took over 2 days, but anyway. Here's a cool screenshot from me trying to route the battery/power section (I was dying).
 
 ![SENSORS](assets/power_section.png)
+
+**Total Time:** 8 hours
 
 # August 24-29: Routing Hell
 
@@ -113,6 +137,8 @@ After another day of routing and tearing my hair out, I took this photo.
 
 I still had a lot left to go but was feeling burnt out.
 
+**Total Time:** 32 hours
+
 # September 3: Finished Routing
 
 After a few days of burnout, I decided to finally finish the routing. I also filled in the planes to make it look nice, and even though nothing is seen at first, here is the final layout with the different layers.
@@ -127,6 +153,8 @@ Bottom layer:
 
 ![SENSORS](assets/bottom_layer.png)
 
+**Total Time:** 8 hours
+
 # September 4: Silkscreen and Logo
 
 Like AVA, I wanted a cool clan-ish silkscreen, so I removed all of the silkscreen on the front and changed the names of the components. I also created a cool retro color effect in Figma to take advantage of JLCPCB's color silkscreen technology. I also included the name (Athena) and v1 and my username NotARoomba. I created a 2D image of the board to create an image for the entire silkscreen layer, and with a few masks and stuff in Figma, I ended up with this design.
@@ -138,3 +166,5 @@ Here is the final board front and back
 
 ![SENSORS](assets/board_front.png)
 ![SENSORS](assets/board_back.png)
+
+**Total Time:** 2 hours
