@@ -1,6 +1,6 @@
 <h1 align="center">
   <br>
-  <a href="https://notaroomba.dev"><img src="assets/logo.png" alt="Athena" width="200"></a>
+  <a href="https://notaroomba.dev"><img src="https://raw.githubusercontent.com/NotARoomba/Athena/main/assets/logo.png" alt="Athena" width="200"></a>
   <br>
   Athena
   <br>
@@ -45,17 +45,17 @@ Athena is a high-performance flight computer designed for advanced rocketry appl
 
 ### Board Images
 
-<img src="assets/board_front.png" alt="Athena Flight Computer Front" width="500"/>
-<img src="assets/board_back.png" alt="Athena Flight Computer Back" width="500"/>
+<img src="https://raw.githubusercontent.com/NotARoomba/Athena/main/assets/board_front.png" alt="Athena Flight Computer Front" width="500"/>
+<img src="https://raw.githubusercontent.com/NotARoomba/Athena/main/assets/board_back.png" alt="Athena Flight Computer Back" width="500"/>
 
 ### PCB Design Process
 
 The board was designed in EasyEDA with careful attention to power distribution and signal integrity:
 
-<img src="assets/routing_finished.png" alt="Power Plane" width="500"/>
-<img src="assets/power_plane.png" alt="Power Plane" width="500"/>
-<img src="assets/signal_layer.png" alt="Signal Layer" width="500"/>
-<img src="assets/bottom_layer.png" alt="Bottom Layer" width="500"/>
+<img src="https://raw.githubusercontent.com/NotARoomba/Athena/main/assets/routing_finished.png" alt="Power Plane" width="500"/>
+<img src="https://raw.githubusercontent.com/NotARoomba/Athena/main/assets/power_plane.png" alt="Power Plane" width="500"/>
+<img src="https://raw.githubusercontent.com/NotARoomba/Athena/main/assets/signal_layer.png" alt="Signal Layer" width="500"/>
+<img src="https://raw.githubusercontent.com/NotARoomba/Athena/main/assets/bottom_layer.png" alt="Bottom Layer" width="500"/>
 
 ## Specifications
 
