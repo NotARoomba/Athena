@@ -109,10 +109,6 @@ void Error_Handler(void);
 #define MAG_SCK_GPIO_Port GPIOC
 #define MAG_MISO_Pin GPIO_PIN_11
 #define MAG_MISO_GPIO_Port GPIOC
-#define MPU_CAN_RX_Pin GPIO_PIN_0
-#define MPU_CAN_RX_GPIO_Port GPIOD
-#define MPU_CAN_TX_Pin GPIO_PIN_1
-#define MPU_CAN_TX_GPIO_Port GPIOD
 #define MPU_CAN_S_Pin GPIO_PIN_2
 #define MPU_CAN_S_GPIO_Port GPIOD
 #define BMP_CS_Pin GPIO_PIN_3

@@ -139,7 +139,7 @@ int main(void)
   MX_FDCAN2_Init();
   MX_USART1_UART_Init();
   MX_TIM2_Init();
-  // MX_USB_DEVICE_Init();
+  MX_USB_DEVICE_Init();
   MX_SDMMC1_SD_Init();
   /* USER CODE BEGIN 2 */
 // MX_USB_DEVICE_Init();
@@ -258,7 +258,7 @@ static void MX_FDCAN2_Init(void)
   hfdcan2.Init.RxBuffersNbr = 0;
   hfdcan2.Init.RxBufferSize = FDCAN_DATA_BYTES_8;
   hfdcan2.Init.TxEventsNbr = 0;
-  hfdcan2.Init.TxBuffersNbr = 0;
+  hfdcan2.Init.TxBuffersNbr = 32;
   hfdcan2.Init.TxFifoQueueElmtsNbr = 0;
   hfdcan2.Init.TxFifoQueueMode = FDCAN_TX_FIFO_OPERATION;
   hfdcan2.Init.TxElmtSize = FDCAN_DATA_BYTES_8;

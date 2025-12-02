@@ -27,7 +27,9 @@
             "*.c": "c"
         },
         "C_Cpp.default.configurationProvider": "ms-vscode.makefile-tools",
-        "terminal.integrated.defaultProfile.windows": "PowerShell"
+        "terminal.integrated.defaultProfile.windows": "PowerShell",
+        "stm32-for-vscode.openOCDPath": false,
+        "stm32-for-vscode.armToolchainPath": false
     },
     "extensions": {
         "recommendations": [
