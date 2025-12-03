@@ -77,8 +77,7 @@ static int imu1_write_reg(uint8_t reg, const uint8_t *buf, uint32_t len)
 
 static void imu1_sleep_us(uint32_t us)
 {
-    uint32_t start = GetTimestamp();
-    while ((GetTimestamp() - start) < us);
+    HAL_Delay((us + 999) / 1000);  // Convert microseconds to milliseconds, rounding up
 }
 
 /* Initialize IMU1 */

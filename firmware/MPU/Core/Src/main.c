@@ -207,8 +207,8 @@ int main(void)
   }
   
   // Start TIM1 CH1 PWM for FSYNC signal at 30kHz (synchronized sensor sampling)
-  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
-  print("FSYNC signal started on TIM1 CH1 at 30kHz\r\n");
+  // HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+  // print("FSYNC signal started on TIM1 CH1 at 30kHz\r\n");
   
   /* USER CODE END 2 */
 
