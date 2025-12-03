@@ -21,8 +21,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE. 
  *
- * @file      driver_bmp388_basic.h
- * @brief     driver bmp388 basic header file
+ * @file      driver_bmp388_shot.h
+ * @brief     driver bmp388 shot header file
  * @version   2.0.0
  * @author    Shifeng Li
  * @date      2021-04-12
@@ -35,8 +35,8 @@
  * </table>
  */
 
-#ifndef DRIVER_BMP388_BASIC_H
-#define DRIVER_BMP388_BASIC_H
+#ifndef DRIVER_BMP388_SHOT_H
+#define DRIVER_BMP388_SHOT_H
 
 #include "driver_bmp388_interface.h"
 
@@ -45,27 +45,25 @@ extern "C"{
 #endif
 
 /**
- * @defgroup bmp388_example_driver bmp388 example driver function
- * @brief    bmp388 example driver modules
- * @ingroup  bmp388_driver
+ * @addtogroup bmp388_example_driver
  * @{
  */
 
 /**
- * @brief bmp388 basic example default definition
+ * @brief bmp388 shot example default definition
  */
-#define BMP388_BASIC_DEFAULT_SPI_WIRE                 BMP388_SPI_WIRE_4                        /**< 4 wire spi */
-#define BMP388_BASIC_DEFAULT_IIC_WATCHDOG_TIMER       BMP388_BOOL_TRUE                         /**< enable iic watchdog timer */
-#define BMP388_BASIC_DEFAULT_IIC_WATCHDOG_PERIOD      BMP388_IIC_WATCHDOG_PERIOD_40_MS         /**< set watchdog timer period 40ms */
-#define BMP388_BASIC_DEFAULT_PRESSURE                 BMP388_BOOL_TRUE                         /**< enable pressure **/
-#define BMP388_BASIC_DEFAULT_TEMPERATURE              BMP388_BOOL_TRUE                         /**< enable temperature */
-#define BMP388_BASIC_DEFAULT_PRESSURE_OVERSAMPLING    BMP388_OVERSAMPLING_x32                  /**< pressure oversampling x32 */
-#define BMP388_BASIC_DEFAULT_TEMPERATURE_OVERSAMPLING BMP388_OVERSAMPLING_x2                   /**< temperature oversampling x2 */
-#define BMP388_BASIC_DEFAULT_ODR                      BMP388_ODR_12P5_HZ                       /**< output data rate 12.5Hz */
-#define BMP388_BASIC_DEFAULT_FILTER_COEFFICIENT       BMP388_FILTER_COEFFICIENT_15             /**< set filter coefficient 15 */
+#define BMP388_SHOT_DEFAULT_SPI_WIRE                 BMP388_SPI_WIRE_4                        /**< 4 wire spi */
+#define BMP388_SHOT_DEFAULT_IIC_WATCHDOG_TIMER       BMP388_BOOL_TRUE                         /**< enable iic watchdog timer */
+#define BMP388_SHOT_DEFAULT_IIC_WATCHDOG_PERIOD      BMP388_IIC_WATCHDOG_PERIOD_40_MS         /**< set watchdog timer period 40ms */
+#define BMP388_SHOT_DEFAULT_PRESSURE                 BMP388_BOOL_TRUE                         /**< enable pressure */
+#define BMP388_SHOT_DEFAULT_TEMPERATURE              BMP388_BOOL_TRUE                         /**< enable temperature */
+#define BMP388_SHOT_DEFAULT_PRESSURE_OVERSAMPLING    BMP388_OVERSAMPLING_x32                  /**< pressure oversampling x32 */
+#define BMP388_SHOT_DEFAULT_TEMPERATURE_OVERSAMPLING BMP388_OVERSAMPLING_x2                   /**< temperature oversampling x2 */
+#define BMP388_SHOT_DEFAULT_ODR                      BMP388_ODR_12P5_HZ                       /**< output data rate 12.5Hz */
+#define BMP388_SHOT_DEFAULT_FILTER_COEFFICIENT       BMP388_FILTER_COEFFICIENT_15             /**< set filter coefficient 15 */
 
 /**
- * @brief     basic example init
+ * @brief     shot example init
  * @param[in] interface chip interface
  * @param[in] addr_pin iic device address
  * @return    status code
@@ -73,19 +71,19 @@ extern "C"{
  *            - 1 init failed
  * @note      none
  */
-uint8_t bmp388_basic_init(bmp388_interface_t interface, bmp388_address_t addr_pin);
+uint8_t bmp388_shot_init(bmp388_interface_t interface, bmp388_address_t addr_pin);
 
 /**
- * @brief  basic example deinit
+ * @brief  shot example deinit
  * @return status code
  *         - 0 success
  *         - 1 deinit failed
  * @note   none
  */
-uint8_t bmp388_basic_deinit(void);
+uint8_t bmp388_shot_deinit(void);
 
 /**
- * @brief      basic example read
+ * @brief      shot example read
  * @param[out] *temperature_c pointer a converted temperature data buffer
  * @param[out] *pressure_pa pointer a converted pressure data buffer
  * @return     status code
@@ -93,7 +91,7 @@ uint8_t bmp388_basic_deinit(void);
  *             - 1 read failed
  * @note       none
  */
-uint8_t bmp388_basic_read(float *temperature_c, float *pressure_pa);
+uint8_t bmp388_shot_read(float *temperature_c, float *pressure_pa);
 
 /**
  * @}

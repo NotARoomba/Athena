@@ -14,14 +14,12 @@ typedef struct {
     float temperature_c;
     float pressure_pa;
     uint32_t timestamp;
-    uint8_t data_ready;
 } BMP388_Data;
 
 typedef struct {
     float temperature_c;
-    float pressure_kpa;
+    float pressure_pa;
     uint32_t timestamp;
-    uint8_t data_ready;
 } ICP201_Data;
 
 typedef struct {
@@ -51,9 +49,12 @@ typedef struct  {
     uint16_t pin_b;
 } Athena_LED_PinConfig;
 
+typedef struct {
+    void* htim;   // Timer handle for millisecond counter
+} Athena_TimerConfig;
 
-
-void Athena_Init(Athena_LED_PinConfig* config);
+void Athena_Init(Athena_LED_PinConfig* led_config, Athena_TimerConfig* timer_config);
+uint32_t GetTimestamp(void);
 void Set_LED_Color(LED_ColorTypeDef color);
 void LED_Test_Sequence(void);
 void print(const char* format, ...) __attribute__((format(printf, 1, 2)));

@@ -84,8 +84,8 @@ Core/Src/sysmem.c \
 Core/Src/system_stm32h7xx.c \
 Drivers/BMP388/driver_bmp388.c \
 Drivers/BMP388/driver_bmp388_basic.c \
-Drivers/BMP388/driver_bmp388_fifo.c \
 Drivers/BMP388/driver_bmp388_interface.c \
+Drivers/BMP388/driver_bmp388_shot.c \
 Drivers/ICP201xx/Icp201xx.c \
 Drivers/ICP201xx/Icp201xxDriver.c \
 Drivers/ICP201xx/Icp201xxSerif.c \
@@ -111,6 +111,8 @@ Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_pwr.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_pwr_ex.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_rcc.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_rcc_ex.c \
+Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_rtc.c \
+Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_rtc_ex.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_spi.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_spi_ex.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_tim.c \

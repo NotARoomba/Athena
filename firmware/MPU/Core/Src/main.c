@@ -25,7 +25,8 @@
 
 #include "usbd_cdc_if.h"
 #include "athena.h"
-#include "driver_bmp388_fifo.h"
+#include "driver_bmp388_basic.h"
+// #include "driver_bmp388_shot.h"
 #include "icp201xx_interface.h"
 
 /* USER CODE END Includes */
@@ -49,12 +50,15 @@
 
 FDCAN_HandleTypeDef hfdcan1;
 
+RTC_HandleTypeDef hrtc;
+
 SPI_HandleTypeDef hspi1;
 SPI_HandleTypeDef hspi3;
 SPI_HandleTypeDef hspi4;
 SPI_HandleTypeDef hspi6;
 
 TIM_HandleTypeDef htim1;
+TIM_HandleTypeDef htim2;
 
 UART_HandleTypeDef huart4;
 UART_HandleTypeDef huart8;
@@ -69,12 +73,8 @@ Athena_LED_PinConfig led_pins = {
       .port_b = MPU_B_GPIO_Port,
       .pin_b = MPU_B_Pin
   };
-uint8_t gs_fifo_full_flag;
-uint8_t gs_fifo_watermark_flag;
-uint8_t gs_data_ready_flag;
-uint16_t i, timeout;
-uint8_t gs_buf[512];
-bmp388_frame_t gs_frame[256];
+
+volatile uint8_t bmp388_data_ready = 0;  // Flag set by interrupt
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -90,56 +90,11 @@ static void MX_UART4_Init(void);
 static void MX_FDCAN1_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_TIM1_Init(void);
+static void MX_RTC_Init(void);
+static void MX_TIM2_Init(void);
 /* USER CODE BEGIN PFP */
 Athena_SensorData sensor_data = {0};  // Global sensor data structure
 
-void bmp388_fifo_receive_callback(uint8_t type)
-{
-    switch (type)
-    {
-        case BMP388_INTERRUPT_STATUS_FIFO_WATERMARK :
-        {
-            gs_fifo_watermark_flag = 1;
-            break;
-        }
-        case BMP388_INTERRUPT_STATUS_FIFO_FULL :
-        {
-            gs_fifo_full_flag = 1;
-            break;
-        }
-        case BMP388_INTERRUPT_STATUS_DATA_READY :
-        {
-            gs_data_ready_flag = 1;
-            break;
-        }
-        default :
-        {
-            break;
-        }
-    }
-}
-
-void update_bmp388_data(void)
-{
-    uint16_t len = 512;
-    uint16_t frame_len = 256;
-    uint8_t res = bmp388_fifo_read(gs_buf, len, gs_frame, &frame_len);
-    
-    if (res == 0 && frame_len > 0) {
-        // Process frames and update sensor data
-        for (uint16_t i = 0; i < frame_len; i++) {
-            if (gs_frame[i].type == BMP388_FRAME_TYPE_TEMPERATURE) {
-                sensor_data.bmp388.temperature_c = gs_frame[i].data;
-                sensor_data.bmp388.data_ready = 1;
-            } else if (gs_frame[i].type == BMP388_FRAME_TYPE_PRESSURE) {
-                sensor_data.bmp388.pressure_pa = gs_frame[i].data;
-                sensor_data.bmp388.data_ready = 1;
-            } else if (gs_frame[i].type == BMP388_FRAME_TYPE_SENSORTIME) {
-                sensor_data.bmp388.timestamp = gs_frame[i].raw;
-            }
-        }
-    }
-}
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -178,7 +133,10 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-    Athena_Init(&led_pins);
+  Athena_TimerConfig timer_cfg = {
+    .htim = &htim2
+  };
+  Athena_Init(&led_pins, &timer_cfg);
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -193,65 +151,52 @@ int main(void)
   MX_USART1_UART_Init();
   MX_TIM1_Init();
   MX_USB_DEVICE_Init();
+  MX_RTC_Init();
+  MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
+
+  // Start TIM2 for GetTimestamp() function
+  HAL_TIM_Base_Start(&htim2);
 
   HAL_Delay(2000);
   
-  // BMP388 BASIC CONFIGURATION
+  // BMP388 BASIC MODE CONFIGURATION
   int bmp_res;
-  float bmp_temperature_c;
-  float bmp_pressure_pa;
 
-  // bmp_res = bmp388_basic_init(BMP388_INTERFACE_SPI, BMP388_ADDRESS_ADO_LOW);
-  // if (bmp_res != 0)
-  // {
-  //     char buffer[64];
-  //     int len = sprintf(buffer, "BMP388 initialization failed, code: %d\r\n", bmp_res);
-  //     CDC_Transmit_FS((uint8_t *)buffer, len);
-  // }
-  // else
-  // {
-  //     CDC_Transmit_FS((uint8_t *)"BMP388 initialized successfully!\r\n", 35);
-  // }
-// bmp_res = gpio_interrupt_init();
-// if (bmp_res != 0)
-// {
-//     return 1;
-// }
-bmp_res = bmp388_fifo_init(BMP388_INTERFACE_SPI, BMP388_ADDRESS_ADO_LOW, bmp388_fifo_receive_callback);
+bmp_res = bmp388_basic_init(BMP388_INTERFACE_SPI, BMP388_ADDRESS_ADO_LOW);
 if (bmp_res != 0)
 {
-    print("BMP388 FIFO initialization failed, code: %d\r\n", bmp_res);
+    print("BMP388 basic initialization failed, code: %d\r\n", bmp_res);
 }
 else
 {
-    print("BMP388 FIFO initialized successfully!\r\n");
+    print("BMP388 basic initialized successfully!\r\n");
 }
   // ICP201xx CONFIGURATION
-  // ICP201xx_t icp_device;
-  // int icp_res;
-  // float icp_temperature_c;
-  // float icp_pressure_kpa;
+  ICP201xx_t icp_device;
+  int icp_res;
+  float icp_temperature_c;
+  float icp_pressure_kpa;
   
-  // ICP201xx_init_spi(&icp_device);
-  // icp_res = ICP201xx_begin(&icp_device);
-  // if (icp_res != 0)
-  // {
-  //     char buffer[64];
-  //     int len = sprintf(buffer, "ICP201xx initialization failed, code: %d\r\n", icp_res);
-  //     CDC_Transmit_FS((uint8_t *)buffer, len);
-  // }
-  // else
-  // {
-  //     CDC_Transmit_FS((uint8_t *)"ICP201xx initialized successfully!\r\n", 37);
-  //     icp_res = ICP201xx_start(&icp_device);
-  //     if (icp_res != 0)
-  //     {
-  //         char buffer[64];
-  //         int len = sprintf(buffer, "ICP201xx start failed, code: %d\r\n", icp_res);
-  //         CDC_Transmit_FS((uint8_t *)buffer, len);
-  //     }
-  // }
+  ICP201xx_init_spi(&icp_device);
+  icp_res = ICP201xx_begin(&icp_device);
+  if (icp_res != 0)
+  {
+      char buffer[64];
+      int len = sprintf(buffer, "ICP201xx initialization failed, code: %d\r\n", icp_res);
+      CDC_Transmit_FS((uint8_t *)buffer, len);
+  }
+  else
+  {
+      CDC_Transmit_FS((uint8_t *)"ICP201xx initialized successfully!\r\n", 37);
+      icp_res = ICP201xx_start(&icp_device);
+      if (icp_res != 0)
+      {
+          char buffer[64];
+          int len = sprintf(buffer, "ICP201xx start failed, code: %d\r\n", icp_res);
+          CDC_Transmit_FS((uint8_t *)buffer, len);
+      }
+  }
 
   
   // MX_USB_DEVICE_Init();
@@ -267,73 +212,61 @@ else
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    // Check if BMP388 data is ready (fastest response)
-    if (gs_data_ready_flag) {
-      gs_data_ready_flag = 0;
-      Set_LED_Color(LED_GREEN);
+    // if (bmp_res == 0 && bmp388_data_ready != 0) {
+    //   // Clear the flag
+    //   bmp388_data_ready = 0;
       
-      // Read fresh data from FIFO
-      update_bmp388_data();
+    //   // Read from BMP388
+    //   float temperature_c, pressure_pa;
+    //   uint8_t res = bmp388_basic_read(&temperature_c, &pressure_pa);
       
-      // Print sensor data if available
-      if (sensor_data.bmp388.data_ready) {
-        print("BMP388: T=%.2fC P=%.2fPa\r\n", 
-              sensor_data.bmp388.temperature_c, 
-              sensor_data.bmp388.pressure_pa);
-        sensor_data.bmp388.data_ready = 0;
-      }
-      
-      Set_LED_Color(LED_BLUE);
-    }
-    
-    // Also check FIFO watermark/full as fallback (slower)
-    if (gs_fifo_watermark_flag || gs_fifo_full_flag) {
-      Set_LED_Color(LED_GREEN);
-      
-      // Update sensor data from FIFO
-      update_bmp388_data();
-      
-      // Print sensor data if available
-      if (sensor_data.bmp388.data_ready) {
-        print("BMP388 FIFO: T=%.2fC P=%.2fPa\r\n", 
-              sensor_data.bmp388.temperature_c, 
-              sensor_data.bmp388.pressure_pa);
-        sensor_data.bmp388.data_ready = 0;
-      }
-      
-      gs_fifo_watermark_flag = 0;
-      gs_fifo_full_flag = 0;
-      Set_LED_Color(LED_BLUE);
-    }
-    
-    HAL_Delay(1);  // Very small delay
-  }
-    
-    // Read ICP201xx sensor
-    // if (icp_res == 0) {
-    //   icp_res = ICP201xx_getData(&icp_device, &icp_pressure_kpa, &icp_temperature_c);
-    //   if (icp_res != 0)
-    //   {
-    //       print("ICP201xx: read failed, code: %d\r\n", icp_res);
-    //   }
-    //   else
-    //   {
-    //       print("ICP201xx: temperature is %0.2fC, pressure is %0.3fkPa\r\n", 
-    //             icp_temperature_c, icp_pressure_kpa);
+    //   if (res == 0) {
+    //     // Update sensor data structure
+    //     sensor_data.bmp388.temperature_c = temperature_c;
+    //     sensor_data.bmp388.pressure_pa = pressure_pa;
+    //     sensor_data.bmp388.timestamp = GetTimestamp();
+        
+    //     // Print sensor data
+    //     print("BMP388: T=%.2fC P=%.2fPa Time=%lu\r\n", 
+    //           sensor_data.bmp388.temperature_c, 
+    //           sensor_data.bmp388.pressure_pa,
+    //           sensor_data.bmp388.timestamp);
+    //   } else {
+    //     print("BMP388: Read error\r\n");
     //   }
     // }
+    
+    // HAL_Delay(1000);
+    // Read ICP201xx sensor
+    if (icp_res == 0) {
+      int icp_res2 = ICP201xx_getData(&icp_device, &icp_pressure_kpa, &icp_temperature_c);
+      if (icp_res2 != 0)
+      {
+          print("ICP201xx: read failed, code: %d\r\n", icp_res);
+      }
+      else
+      {
+        sensor_data.icp201.temperature_c = icp_temperature_c;
+        sensor_data.icp201.pressure_pa = icp_pressure_kpa * 1000;
+        sensor_data.icp201.timestamp = GetTimestamp();
+          print("ICP201xx: T=%0.2fC P=%0.3fPa Time=%lu\r\n", 
+                icp_temperature_c, icp_pressure_kpa * 1000, GetTimestamp());  // Add 1000kPa offset
+      }
+    }
     
     Set_LED_Color(LED_BLUE);
     // HAL_GPIO_WritePin(MPU_B_GPIO_Port, MPU_B_Pin, GPIO_PIN_SET);
     // HAL_Delay(1000);
     // HAL_GPIO_WritePin(MPU_B_GPIO_Port, MPU_B_Pin, GPIO_PIN_RESET);
-    // HAL_Delay(1000);
+    HAL_Delay(100);
+  }
+    
+   
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-  }
   /* USER CODE END 3 */
-
+}
 
 /**
   * @brief System Clock Configuration
@@ -357,9 +290,11 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI48|RCC_OSCILLATORTYPE_HSI;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI48|RCC_OSCILLATORTYPE_HSI
+                              |RCC_OSCILLATORTYPE_LSI;
   RCC_OscInitStruct.HSIState = RCC_HSI_DIV1;
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+  RCC_OscInitStruct.LSIState = RCC_LSI_ON;
   RCC_OscInitStruct.HSI48State = RCC_HSI48_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
@@ -445,6 +380,42 @@ static void MX_FDCAN1_Init(void)
   /* USER CODE BEGIN FDCAN1_Init 2 */
 
   /* USER CODE END FDCAN1_Init 2 */
+
+}
+
+/**
+  * @brief RTC Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_RTC_Init(void)
+{
+
+  /* USER CODE BEGIN RTC_Init 0 */
+
+  /* USER CODE END RTC_Init 0 */
+
+  /* USER CODE BEGIN RTC_Init 1 */
+
+  /* USER CODE END RTC_Init 1 */
+
+  /** Initialize RTC Only
+  */
+  hrtc.Instance = RTC;
+  hrtc.Init.HourFormat = RTC_HOURFORMAT_24;
+  hrtc.Init.AsynchPrediv = 127;
+  hrtc.Init.SynchPrediv = 255;
+  hrtc.Init.OutPut = RTC_OUTPUT_DISABLE;
+  hrtc.Init.OutPutPolarity = RTC_OUTPUT_POLARITY_HIGH;
+  hrtc.Init.OutPutType = RTC_OUTPUT_TYPE_OPENDRAIN;
+  hrtc.Init.OutPutRemap = RTC_OUTPUT_REMAP_NONE;
+  if (HAL_RTC_Init(&hrtc) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN RTC_Init 2 */
+
+  /* USER CODE END RTC_Init 2 */
 
 }
 
@@ -711,6 +682,60 @@ static void MX_TIM1_Init(void)
 }
 
 /**
+  * @brief TIM2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM2_Init(void)
+{
+
+  /* USER CODE BEGIN TIM2_Init 0 */
+  /* USER CODE END TIM2_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM2_Init 1 */
+  /* USER CODE END TIM2_Init 1 */
+  htim2.Instance = TIM2;
+  htim2.Init.Prescaler = 0;
+  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim2.Init.Period = 0xFFFFFFFF;
+  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM2_Init 2 */
+ uint32_t tim_clk = HAL_RCC_GetPCLK1Freq();
+
+// APB1 prescaler check
+uint32_t ppre = (RCC->D2CFGR & RCC_D2CFGR_D2PPRE1) >> RCC_D2CFGR_D2PPRE1_Pos;
+if (ppre > 4) tim_clk *= 2;
+
+// Set 1 kHz tick from 80 MHz timer → PSC = 79999
+htim2.Init.Prescaler = (tim_clk / 1000) - 1;
+htim2.Init.Period    = 0xFFFFFFFF;
+
+HAL_TIM_Base_Init(&htim2);   // <- THIS IS NOW SAFE
+HAL_TIM_Base_Start(&htim2);
+  /* USER CODE END TIM2_Init 2 */
+
+}
+
+/**
   * @brief UART4 Initialization Function
   * @param None
   * @retval None
@@ -885,10 +910,10 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOE, IMU1_INT_Pin|IMU1_CS_Pin|IMU2_INT_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOD, MPU_CAN_S_Pin|ICP_INT_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOD, MPU_CAN_S_Pin|ICP_CS_Pin|ICP_INT_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOD, BMP_CS_Pin|ICP_CS_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(BMP_CS_GPIO_Port, BMP_CS_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin : TPU_SELECT_Pin */
   GPIO_InitStruct.Pin = TPU_SELECT_Pin;

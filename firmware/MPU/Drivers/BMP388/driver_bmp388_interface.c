@@ -244,7 +244,7 @@ void bmp388_interface_debug_print(const char *const fmt, ...)
     va_start(args, fmt);
     vsnprintf(debug_buffer, sizeof(debug_buffer), fmt, args);
     va_end(args);
-    print("DEBUG PRINT");
+
     CDC_Transmit_FS((uint8_t*)debug_buffer, strlen(debug_buffer));
 }
 
@@ -255,30 +255,29 @@ void bmp388_interface_debug_print(const char *const fmt, ...)
  */
 void bmp388_interface_receive_callback(uint8_t type)
 {
+    extern volatile uint8_t bmp388_data_ready;
+    
     switch (type)
     {
         case BMP388_INTERRUPT_STATUS_FIFO_WATERMARK :
         {
-            bmp388_interface_debug_print("bmp388: irq fifo watermark.\n");
-            
+            // Not used in shot mode
             break;
         }
         case BMP388_INTERRUPT_STATUS_FIFO_FULL :
         {
-            bmp388_interface_debug_print("bmp388: irq fifo full.\n");
-            
+            // Not used in shot mode
             break;
         }
         case BMP388_INTERRUPT_STATUS_DATA_READY :
         {
-            bmp388_interface_debug_print("bmp388: irq data ready.\n");
-            
+            // Set flag for main loop to read data
+            bmp388_data_ready = 1;
             break;
         }
         default :
         {
-            bmp388_interface_debug_print("bmp388: unknown code.\n");
-            
+            // Unknown interrupt type
             break;
         }
     }

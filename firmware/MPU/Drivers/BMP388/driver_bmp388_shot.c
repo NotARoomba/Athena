@@ -21,8 +21,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE. 
  *
- * @file      driver_bmp388_fifo.c
- * @brief     driver bmp388 fifo source file
+ * @file      driver_bmp388_shot.c
+ * @brief     driver bmp388 shot source file
  * @version   2.0.0
  * @author    Shifeng Li
  * @date      2021-04-12
@@ -35,42 +35,20 @@
  * </table>
  */
 
-#include "driver_bmp388_fifo.h"
+#include "driver_bmp388_shot.h"
 
 static bmp388_handle_t gs_handle;        /**< bmp388 handle */
 
 /**
- * @brief  fifo example irq handler
- * @return status code
- *         - 0 success
- *         - 1 run failed
- * @note   none
- */
-uint8_t bmp388_fifo_irq_handler(void)
-{
-    /* run irq handler */
-    if (bmp388_irq_handler(&gs_handle) != 0)
-    {
-        return 1;
-    }
-    else
-    {
-        return 0;
-    }
-}
-
-/**
- * @brief     fifo example init
+ * @brief     shot example init
  * @param[in] interface chip interface
  * @param[in] addr_pin iic device address
- * @param[in] *fifo_receive_callback pointer to a fifo receive callback
  * @return    status code
  *            - 0 success
  *            - 1 init failed
  * @note      none
  */
-uint8_t bmp388_fifo_init(bmp388_interface_t interface, bmp388_address_t addr_pin,
-                         void (*fifo_receive_callback)(uint8_t type))
+uint8_t bmp388_shot_init(bmp388_interface_t interface, bmp388_address_t addr_pin)
 {
     uint8_t res;
     
@@ -86,7 +64,7 @@ uint8_t bmp388_fifo_init(bmp388_interface_t interface, bmp388_address_t addr_pin
     DRIVER_BMP388_LINK_SPI_WRITE(&gs_handle, bmp388_interface_spi_write);
     DRIVER_BMP388_LINK_DELAY_MS(&gs_handle, bmp388_interface_delay_ms);
     DRIVER_BMP388_LINK_DEBUG_PRINT(&gs_handle, bmp388_interface_debug_print);
-    DRIVER_BMP388_LINK_RECEIVE_CALLBACK(&gs_handle, fifo_receive_callback);
+    DRIVER_BMP388_LINK_RECEIVE_CALLBACK(&gs_handle, bmp388_interface_receive_callback);
     
     /* set interface */
     res = bmp388_set_interface(&gs_handle, interface);
@@ -115,8 +93,8 @@ uint8_t bmp388_fifo_init(bmp388_interface_t interface, bmp388_address_t addr_pin
         return 1;
     }
     
-    /* set spi wire 4 */
-    res = bmp388_set_spi_wire(&gs_handle, BMP388_FIFO_DEFAULT_SPI_WIRE);
+    /* set default spi wire */
+    res = bmp388_set_spi_wire(&gs_handle, BMP388_SHOT_DEFAULT_SPI_WIRE);
     if (res != 0)
     {
         bmp388_interface_debug_print("bmp388: set spi wire failed.\n");
@@ -126,7 +104,7 @@ uint8_t bmp388_fifo_init(bmp388_interface_t interface, bmp388_address_t addr_pin
     }
     
     /* set default iic watchdog timer */
-    res = bmp388_set_iic_watchdog_timer(&gs_handle, BMP388_FIFO_DEFAULT_IIC_WATCHDOG_TIMER);
+    res = bmp388_set_iic_watchdog_timer(&gs_handle, BMP388_SHOT_DEFAULT_IIC_WATCHDOG_TIMER);
     if (res != 0)
     {
         bmp388_interface_debug_print("bmp388: set iic watchdog timer failed.\n");
@@ -136,7 +114,7 @@ uint8_t bmp388_fifo_init(bmp388_interface_t interface, bmp388_address_t addr_pin
     }
     
     /* set default iic watchdog period */
-    res = bmp388_set_iic_watchdog_period(&gs_handle, BMP388_FIFO_DEFAULT_IIC_WATCHDOG_PERIOD);
+    res = bmp388_set_iic_watchdog_period(&gs_handle, BMP388_SHOT_DEFAULT_IIC_WATCHDOG_PERIOD);
     if (res != 0)
     {
         bmp388_interface_debug_print("bmp388: set iic watchdog period failed.\n");
@@ -145,8 +123,8 @@ uint8_t bmp388_fifo_init(bmp388_interface_t interface, bmp388_address_t addr_pin
         return 1;
     }
     
-    /* enable fifo */
-    res = bmp388_set_fifo(&gs_handle, BMP388_BOOL_TRUE);
+    /* disable fifo */
+    res = bmp388_set_fifo(&gs_handle, BMP388_BOOL_FALSE);
     if (res != 0)
     {
         bmp388_interface_debug_print("bmp388: set fifo failed.\n");
@@ -154,79 +132,9 @@ uint8_t bmp388_fifo_init(bmp388_interface_t interface, bmp388_address_t addr_pin
         
         return 1;
     }
-    
-    /* set default fifo stop on full */
-    res = bmp388_set_fifo_stop_on_full(&gs_handle, BMP388_FIFO_DEFAULT_FIFO_STOP_ON_FULL);
-    if (res != 0)
-    {
-        bmp388_interface_debug_print("bmp388: set fifo stop on full failed.\n");
-        (void)bmp388_deinit(&gs_handle);
-        
-        return 1;
-    }
-    
-    /* set default fifo watermark */
-    res = bmp388_set_fifo_watermark(&gs_handle, BMP388_FIFO_DEFAULT_FIFO_WATERMARK);
-    if (res != 0)
-    {
-        bmp388_interface_debug_print("bmp388: set fifo watermark failed.\n");
-        (void)bmp388_deinit(&gs_handle);
-        
-        return 1;
-    }
-    
-    /* set default fifo sensor time on */
-    res = bmp388_set_fifo_sensortime_on(&gs_handle, BMP388_FIFO_DEFAULT_FIFO_SENSORTIME_ON);
-    if (res != 0)
-    {
-        bmp388_interface_debug_print("bmp388: set fifo sensor time on failed.\n");
-        (void)bmp388_deinit(&gs_handle);
-        
-        return 1;
-    }
-    
-    /* set default fifo pressure on */
-    res = bmp388_set_fifo_pressure_on(&gs_handle, BMP388_FIFO_DEFAULT_FIFO_PRESSURE_ON);
-    if (res != 0)
-    {
-        bmp388_interface_debug_print("bmp388: set fifo sensor time on failed.\n");
-        (void)bmp388_deinit(&gs_handle);
-        
-        return 1;
-    }
-    
-    /* set default fifo temperature on */
-    res = bmp388_set_fifo_temperature_on(&gs_handle, BMP388_FIFO_DEFAULT_FIFO_TEMPERATURE_ON);
-    if (res != 0)
-    {
-        bmp388_interface_debug_print("bmp388: set fifo temperature on failed.\n");
-        (void)bmp388_deinit(&gs_handle);
-        
-        return 1;
-    }
-    
-    /* set default fifo subsampling */
-    res = bmp388_set_fifo_subsampling(&gs_handle, BMP388_FIFO_DEFAULT_FIFO_SUBSAMPLING);
-    if (res != 0)
-    {
-        bmp388_interface_debug_print("bmp388: set fifo subsampling failed.\n");
-        (void)bmp388_deinit(&gs_handle);
-        
-        return 1;
-    }
-    
-    /* set default fifo data source */
-    res = bmp388_set_fifo_data_source(&gs_handle,BMP388_FIFO_DEFAULT_FIFO_DATA_SOURCE);
-    if (res != 0)
-    {
-        bmp388_interface_debug_print("bmp388: set fifo data source failed.\n");
-        (void)bmp388_deinit(&gs_handle);
-        
-        return 1;
-    }
-    
-    /* set default interrupt pin type */
-    res = bmp388_set_interrupt_pin_type(&gs_handle, BMP388_FIFO_DEFAULT_INTERRUPT_PIN_TYPE);
+
+     /* set default interrupt pin type */
+    res = bmp388_set_interrupt_pin_type(&gs_handle, BMP388_INTERRUPT_PIN_TYPE_PUSH_PULL);
     if (res != 0)
     {
         bmp388_interface_debug_print("bmp388: set interrupt pin type failed.\n");
@@ -236,7 +144,7 @@ uint8_t bmp388_fifo_init(bmp388_interface_t interface, bmp388_address_t addr_pin
     }
     
     /* set default interrupt active level */
-    res = bmp388_set_interrupt_active_level(&gs_handle, BMP388_FIFO_DEFAULT_INTERRUPT_ACTIVE_LEVEL);
+    res = bmp388_set_interrupt_active_level(&gs_handle, BMP388_INTERRUPT_ACTIVE_LEVEL_HIGHER);
     if (res != 0)
     {
         bmp388_interface_debug_print("bmp388: set interrupt active level failed.\n");
@@ -246,30 +154,10 @@ uint8_t bmp388_fifo_init(bmp388_interface_t interface, bmp388_address_t addr_pin
     }
     
     /* set default latch interrupt pin and interrupt status */
-    res = bmp388_set_latch_interrupt_pin_and_interrupt_status(&gs_handle, BMP388_FIFO_DEFAULT_LATCH_INTERRUPT);
+    res = bmp388_set_latch_interrupt_pin_and_interrupt_status(&gs_handle, BMP388_BOOL_FALSE);
     if (res != 0)
     {
         bmp388_interface_debug_print("bmp388: set latch interrupt pin and interrupt status failed.\n");
-        (void)bmp388_deinit(&gs_handle);
-        
-        return 1;
-    }
-    
-    /* set default interrupt fifo watermark */
-    res = bmp388_set_interrupt_fifo_watermark(&gs_handle, BMP388_FIFO_DEFAULT_INTERRUPT_WATERMARK);
-    if (res != 0)
-    {
-        bmp388_interface_debug_print("bmp388: set interrupt fifo watermark failed.\n");
-        (void)bmp388_deinit(&gs_handle);
-        
-        return 1;
-    }
-    
-    /* set default interrupt fifo full */
-    res = bmp388_set_interrupt_fifo_full(&gs_handle, BMP388_FIFO_DEFAULT_INTERRUPT_FIFO_FULL);
-    if (res != 0)
-    {
-        bmp388_interface_debug_print("bmp388: set interrupt fifo full failed.\n");
         (void)bmp388_deinit(&gs_handle);
         
         return 1;
@@ -286,7 +174,7 @@ uint8_t bmp388_fifo_init(bmp388_interface_t interface, bmp388_address_t addr_pin
     }
     
     /* set default pressure */
-    res = bmp388_set_pressure(&gs_handle, BMP388_FIFO_DEFAULT_PRESSURE);
+    res = bmp388_set_pressure(&gs_handle, BMP388_SHOT_DEFAULT_PRESSURE);
     if (res != 0)
     {
         bmp388_interface_debug_print("bmp388: set pressure failed.\n");
@@ -296,7 +184,7 @@ uint8_t bmp388_fifo_init(bmp388_interface_t interface, bmp388_address_t addr_pin
     }
     
     /* set default temperature */
-    res = bmp388_set_temperature(&gs_handle, BMP388_FIFO_DEFAULT_TEMPERATURE);
+    res = bmp388_set_temperature(&gs_handle, BMP388_SHOT_DEFAULT_TEMPERATURE);
     if (res != 0)
     {
         bmp388_interface_debug_print("bmp388: set temperature failed.\n");
@@ -306,7 +194,7 @@ uint8_t bmp388_fifo_init(bmp388_interface_t interface, bmp388_address_t addr_pin
     }
     
     /* set default pressure oversampling */
-    res = bmp388_set_pressure_oversampling(&gs_handle, BMP388_FIFO_DEFAULT_PRESSURE_OVERSAMPLING);
+    res = bmp388_set_pressure_oversampling(&gs_handle, BMP388_SHOT_DEFAULT_PRESSURE_OVERSAMPLING);
     if (res != 0)
     {
         bmp388_interface_debug_print("bmp388: set pressure oversampling failed.\n");
@@ -316,7 +204,7 @@ uint8_t bmp388_fifo_init(bmp388_interface_t interface, bmp388_address_t addr_pin
     }
     
     /* set default temperature oversampling */
-    res = bmp388_set_temperature_oversampling(&gs_handle, BMP388_FIFO_DEFAULT_TEMPERATURE_OVERSAMPLING);
+    res = bmp388_set_temperature_oversampling(&gs_handle, BMP388_SHOT_DEFAULT_TEMPERATURE_OVERSAMPLING);
     if (res != 0)
     {
         bmp388_interface_debug_print("bmp388: set temperature oversampling failed.\n");
@@ -326,7 +214,7 @@ uint8_t bmp388_fifo_init(bmp388_interface_t interface, bmp388_address_t addr_pin
     }
     
     /* set default odr */
-    res = bmp388_set_odr(&gs_handle, BMP388_FIFO_DEFAULT_ODR);
+    res = bmp388_set_odr(&gs_handle, BMP388_SHOT_DEFAULT_ODR);
     if (res != 0)
     {
         bmp388_interface_debug_print("bmp388: set odr failed.\n");
@@ -336,7 +224,7 @@ uint8_t bmp388_fifo_init(bmp388_interface_t interface, bmp388_address_t addr_pin
     }
     
     /* set default filter coefficient */
-    res = bmp388_set_filter_coefficient(&gs_handle, BMP388_FIFO_DEFAULT_FILTER_COEFFICIENT);
+    res = bmp388_set_filter_coefficient(&gs_handle, BMP388_SHOT_DEFAULT_FILTER_COEFFICIENT);
     if (res != 0)
     {
         bmp388_interface_debug_print("bmp388: set filter coefficient failed.\n");
@@ -345,64 +233,55 @@ uint8_t bmp388_fifo_init(bmp388_interface_t interface, bmp388_address_t addr_pin
         return 1;
     }
     
-    /* set normal mode */
-    res = bmp388_set_mode(&gs_handle, BMP388_MODE_NORMAL_MODE);
+    /* set forced mode */
+    res = bmp388_set_mode(&gs_handle, BMP388_MODE_FORCED_MODE);
     if (res != 0)
     {
         bmp388_interface_debug_print("bmp388: set mode failed.\n");
         (void)bmp388_deinit(&gs_handle);
         
         return 1;
-    } 
+    }
     
     return 0;
 }
 
 /**
- * @brief         fifo example read
- * @param[in]     *buf pointer a data buffer
- * @param[in]     buf_len data buffer length
- * @param[out]    *frame pointer a frame structure
- * @param[in,out] *frame_len pointer a frame data buffer
- * @return        status code
- *                - 0 success
- *                - 1 read failed
- * @note          none
+ * @brief      shot example read
+ * @param[out] *temperature_c pointer a converted temperature data buffer
+ * @param[out] *pressure_pa pointer a converted pressure data buffer
+ * @return     status code
+ *             - 0 success
+ *             - 1 read failed
+ * @note       none
  */
-uint8_t bmp388_fifo_read(uint8_t *buf, uint16_t buf_len, bmp388_frame_t *frame, uint16_t *frame_len)
+uint8_t bmp388_shot_read(float *temperature_c, float *pressure_pa)
 {
-    /* read fifo */
-    if (bmp388_read_fifo(&gs_handle, (uint8_t *)buf, (uint16_t *)&buf_len) != 0)
+    uint32_t temperature_raw;
+    uint32_t pressure_raw;
+    
+    /* read temperature and pressure */
+    if (bmp388_read_temperature_pressure(&gs_handle, (uint32_t *)&temperature_raw, temperature_c,
+                                        (uint32_t *)&pressure_raw, pressure_pa) != 0)
     {
         return 1;
     }
-    /* parse fifo */
-    if (bmp388_fifo_parse(&gs_handle, (uint8_t *)buf, buf_len, (bmp388_frame_t *)frame, (uint16_t *)frame_len) != 0)
+    else
     {
-        return 1;
+        return 0;
     }
-   
-    return 0;
 }
 
 /**
- * @brief  fifo example deinit
+ * @brief  shot example deinit
  * @return status code
  *         - 0 success
  *         - 1 deinit failed
  * @note   none
  */
-uint8_t bmp388_fifo_deinit(void)
+uint8_t bmp388_shot_deinit(void)
 {
-    uint8_t res;
-    
-    /* set sleep mode */
-    res = bmp388_set_mode(&gs_handle, BMP388_MODE_SLEEP_MODE);
-    if (res != 0)
-    {
-        return 1;
-    }
-    
+    /* close bmp388 */
     if (bmp388_deinit(&gs_handle) != 0)
     {
         return 1;

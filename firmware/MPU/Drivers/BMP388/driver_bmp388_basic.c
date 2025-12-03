@@ -133,6 +133,36 @@ uint8_t bmp388_basic_init(bmp388_interface_t interface, bmp388_address_t addr_pi
         return 1;
     }
     
+    /* set interrupt pin type */
+    res = bmp388_set_interrupt_pin_type(&gs_handle, BMP388_INTERRUPT_PIN_TYPE_PUSH_PULL);
+    if (res != 0)
+    {
+        bmp388_interface_debug_print("bmp388: set interrupt pin type failed.\n");
+        (void)bmp388_deinit(&gs_handle);
+        
+        return 1;
+    }
+    
+    /* set interrupt active level */
+    res = bmp388_set_interrupt_active_level(&gs_handle, BMP388_INTERRUPT_ACTIVE_LEVEL_HIGHER);
+    if (res != 0)
+    {
+        bmp388_interface_debug_print("bmp388: set interrupt active level failed.\n");
+        (void)bmp388_deinit(&gs_handle);
+        
+        return 1;
+    }
+    
+    /* set latch interrupt pin and interrupt status */
+    res = bmp388_set_latch_interrupt_pin_and_interrupt_status(&gs_handle, BMP388_BOOL_FALSE);
+    if (res != 0)
+    {
+        bmp388_interface_debug_print("bmp388: set latch interrupt pin and interrupt status failed.\n");
+        (void)bmp388_deinit(&gs_handle);
+        
+        return 1;
+    }
+    
     /* disable interrupt fifo watermark */
     res = bmp388_set_interrupt_fifo_watermark(&gs_handle, BMP388_BOOL_FALSE);
     if (res != 0)
@@ -153,8 +183,8 @@ uint8_t bmp388_basic_init(bmp388_interface_t interface, bmp388_address_t addr_pi
         return 1;
     }
     
-    /* disable interrupt data ready */
-    res = bmp388_set_interrupt_data_ready(&gs_handle,BMP388_BOOL_FALSE);
+    /* enable interrupt data ready */
+    res = bmp388_set_interrupt_data_ready(&gs_handle,BMP388_BOOL_TRUE);
     if (res != 0)
     {
         bmp388_interface_debug_print("bmp388: set interrupt data ready failed.\n");

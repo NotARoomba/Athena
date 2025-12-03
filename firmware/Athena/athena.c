@@ -9,12 +9,34 @@
 extern void HAL_GPIO_WritePin(void* GPIOx, uint16_t GPIO_Pin, int PinState);
 extern void CDC_Transmit_FS(uint8_t* Buf, uint16_t Len);
 extern void HAL_Delay(uint32_t Delay);
+extern uint32_t HAL_GetTick(void);
+
+// Timer handle type
+typedef struct {
+    void* Instance;
+} TIM_HandleTypeDef;
+
+#define __HAL_TIM_GET_COUNTER(__HANDLE__) (((TIM_HandleTypeDef*)(__HANDLE__))->Instance ? \
+    (*(volatile uint32_t*)(((uint8_t*)((TIM_HandleTypeDef*)(__HANDLE__))->Instance) + 0x24)) : 0)
 /* Forward Declaration End */
 
 Athena_LED_PinConfig led_config;
+Athena_TimerConfig timer_config = {0};
 
-void Athena_Init(Athena_LED_PinConfig* config) {
-    led_config = *config;
+void Athena_Init(Athena_LED_PinConfig* led_cfg, Athena_TimerConfig* timer_cfg) {
+    if (led_cfg != NULL) {
+        led_config = *led_cfg;
+    }
+    if (timer_cfg != NULL) {
+        timer_config = *timer_cfg;
+    }
+}
+
+uint32_t GetTimestamp(void) {
+    if (timer_config.htim == NULL) {
+        return 0;
+    }
+    return __HAL_TIM_GET_COUNTER(timer_config.htim);
 }
 
 void Set_LED_Color(LED_ColorTypeDef color) {
