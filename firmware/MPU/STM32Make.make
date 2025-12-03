@@ -86,6 +86,13 @@ Drivers/BMP388/driver_bmp388.c \
 Drivers/BMP388/driver_bmp388_basic.c \
 Drivers/BMP388/driver_bmp388_interface.c \
 Drivers/BMP388/driver_bmp388_shot.c \
+Drivers/ICM45686/imu_interface.c \
+Drivers/ICM45686/inv_imu_driver.c \
+Drivers/ICM45686/inv_imu_driver_advanced.c \
+Drivers/ICM45686/inv_imu_driver_aux1.c \
+Drivers/ICM45686/inv_imu_edmp.c \
+Drivers/ICM45686/inv_imu_selftest.c \
+Drivers/ICM45686/inv_imu_transport.c \
 Drivers/ICP201xx/Icp201xx.c \
 Drivers/ICP201xx/Icp201xxDriver.c \
 Drivers/ICP201xx/Icp201xxSerif.c \
@@ -229,6 +236,7 @@ C_INCLUDES =  \
 -IDrivers/BMP388 \
 -IDrivers/CMSIS/Device/ST/STM32H7xx/Include \
 -IDrivers/CMSIS/Include \
+-IDrivers/ICM45686 \
 -IDrivers/ICP201xx \
 -IDrivers/STM32H7xx_HAL_Driver/Inc \
 -IDrivers/STM32H7xx_HAL_Driver/Inc/Legacy \

@@ -28,6 +28,7 @@
 #include "driver_bmp388_basic.h"
 // #include "driver_bmp388_shot.h"
 #include "icp201xx_interface.h"
+#include "imu_interface.h"
 
 /* USER CODE END Includes */
 
@@ -39,6 +40,7 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 #define __FPU_USED 1U
+#define FSYNC_FREQUENCY_HZ 30000  // FSYNC frequency at 30kHz
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -87,8 +89,8 @@ static void MX_UART8_Init(void);
 static void MX_UART4_Init(void);
 static void MX_FDCAN1_Init(void);
 static void MX_USART1_UART_Init(void);
-static void MX_TIM1_Init(void);
 static void MX_TIM2_Init(void);
+static void MX_TIM1_Init(void);
 /* USER CODE BEGIN PFP */
 Athena_SensorData sensor_data = {0};  // Global sensor data structure
 
@@ -146,9 +148,9 @@ int main(void)
   MX_UART4_Init();
   MX_FDCAN1_Init();
   MX_USART1_UART_Init();
-  MX_TIM1_Init();
   MX_USB_DEVICE_Init();
   MX_TIM2_Init();
+  MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
 
   // Start TIM2 for GetTimestamp() function
@@ -195,45 +197,59 @@ int main(void)
   }
 
   
-  // MX_USB_DEVICE_Init();
-
-  // HAL_Delay(2000);
-  // HAL_GPIO_WritePin(MPU_B_GPIO_Port, MPU_B_Pin, GPIO_PIN_SET);
-  // HAL_Delay(500);
-  // HAL_GPIO_WritePin(MPU_B_GPIO_Port, MPU_B_Pin, GPIO_PIN_RESET);
-  // HAL_Delay(500);
+  // Initialize 3 IMUs with FSYNC synchronization
+  print("\r\n=== Initializing IMUs ===\r\n");
+  int imu_res = IMU_Init();
+  if (imu_res != 0) {
+    print("IMU initialization failed with code: %d\r\n", imu_res);
+  } else {
+    print("All IMUs initialized successfully!\r\n");
+  }
+  
+  // Start TIM1 CH1 PWM for FSYNC signal at 30kHz (synchronized sensor sampling)
+  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+  print("FSYNC signal started on TIM1 CH1 at 30kHz\r\n");
+  
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    // CHECK THE BMP DRIVER LINE 3299 AS THAT FUNCTION USES WHILE LOOPS, USE THIS ONLY WITH RTOS
-    // if (bmp_res == 0) {
-    //   // Clear the flag
-    //   // bmp388_data_ready = 0;
-      
-    //   // Read from BMP388
-    //   float temperature_c, pressure_pa;
-    //   uint8_t res = bmp388_basic_read(&temperature_c, &pressure_pa);
-      
-    //   if (res == 0) {
-    //     // Update sensor data structure
-    //     sensor_data.bmp388.temperature_c = temperature_c;
-    //     sensor_data.bmp388.pressure_pa = pressure_pa;
-    //     sensor_data.bmp388.timestamp = GetTimestamp();
-        
-    //     // Print sensor data
-    //     print("BMP388: T=%.2fC P=%.2fPa Time=%lu\r\n", 
-    //           sensor_data.bmp388.temperature_c, 
-    //           sensor_data.bmp388.pressure_pa,
-    //           sensor_data.bmp388.timestamp);
-    //   } else {
-    //     print("BMP388: Read error\r\n");
-    //   }
-    // }
+    // Process IMU interrupts (FSYNC-synchronized)
+    IMU_Process();
     
-    // HAL_Delay(1000);
+    // Print IMU data when FSYNC event occurs
+    static uint32_t last_print = 0;
+    uint32_t now = GetTimestamp();
+    if ((now - last_print) >= 100000) {  // Print every 100ms
+      last_print = now;
+      
+      if (sensor_data.imu1.fsync_event) {
+        print("IMU1: G=[%7.2f %7.2f %7.2f] A=[%6.2f %6.2f %6.2f] T=%5.1fC FSYNC=%u\r\n",
+              sensor_data.imu1.gyro_dps[0], sensor_data.imu1.gyro_dps[1], sensor_data.imu1.gyro_dps[2],
+              sensor_data.imu1.accel_g[0], sensor_data.imu1.accel_g[1], sensor_data.imu1.accel_g[2],
+              sensor_data.imu1.temperature_c, sensor_data.imu1.fsync_tag);
+        sensor_data.imu1.fsync_event = 0;
+      }
+      
+      if (sensor_data.imu2.fsync_event) {
+        print("IMU2: G=[%7.2f %7.2f %7.2f] A=[%6.2f %6.2f %6.2f] T=%5.1fC FSYNC=%u\r\n",
+              sensor_data.imu2.gyro_dps[0], sensor_data.imu2.gyro_dps[1], sensor_data.imu2.gyro_dps[2],
+              sensor_data.imu2.accel_g[0], sensor_data.imu2.accel_g[1], sensor_data.imu2.accel_g[2],
+              sensor_data.imu2.temperature_c, sensor_data.imu2.fsync_tag);
+        sensor_data.imu2.fsync_event = 0;
+      }
+      
+      if (sensor_data.imu3.fsync_event) {
+        print("IMU3: G=[%7.2f %7.2f %7.2f] A=[%6.2f %6.2f %6.2f] T=%5.1fC FSYNC=%u\r\n",
+              sensor_data.imu3.gyro_dps[0], sensor_data.imu3.gyro_dps[1], sensor_data.imu3.gyro_dps[2],
+              sensor_data.imu3.accel_g[0], sensor_data.imu3.accel_g[1], sensor_data.imu3.accel_g[2],
+              sensor_data.imu3.temperature_c, sensor_data.imu3.fsync_tag);
+        sensor_data.imu3.fsync_event = 0;
+      }
+    }
+    
     // Read ICP201xx sensor
     if (icp_res == 0) {
       int icp_res2 = ICP201xx_getData(&icp_device, &icp_pressure_kpa, &icp_temperature_c);
@@ -296,7 +312,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLM = 4;
   RCC_OscInitStruct.PLL.PLLN = 10;
   RCC_OscInitStruct.PLL.PLLP = 2;
-  RCC_OscInitStruct.PLL.PLLQ = 18;
+  RCC_OscInitStruct.PLL.PLLQ = 4;
   RCC_OscInitStruct.PLL.PLLR = 2;
   RCC_OscInitStruct.PLL.PLLRGE = RCC_PLL1VCIRANGE_3;
   RCC_OscInitStruct.PLL.PLLVCOSEL = RCC_PLL1VCOMEDIUM;
@@ -397,11 +413,11 @@ static void MX_SPI1_Init(void)
   hspi1.Instance = SPI1;
   hspi1.Init.Mode = SPI_MODE_MASTER;
   hspi1.Init.Direction = SPI_DIRECTION_2LINES;
-  hspi1.Init.DataSize = SPI_DATASIZE_4BIT;
+  hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
   hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
-  hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
+  hspi1.Init.CLKPhase = SPI_PHASE_2EDGE;
   hspi1.Init.NSS = SPI_NSS_SOFT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_4;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
@@ -582,6 +598,7 @@ static void MX_TIM1_Init(void)
 
   /* USER CODE END TIM1_Init 0 */
 
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
   TIM_MasterConfigTypeDef sMasterConfig = {0};
   TIM_OC_InitTypeDef sConfigOC = {0};
   TIM_BreakDeadTimeConfigTypeDef sBreakDeadTimeConfig = {0};
@@ -596,6 +613,15 @@ static void MX_TIM1_Init(void)
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim1.Init.RepetitionCounter = 0;
   htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim1, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
   if (HAL_TIM_PWM_Init(&htim1) != HAL_OK)
   {
     Error_Handler();
@@ -862,17 +888,19 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(TPU_SELECT_GPIO_Port, TPU_SELECT_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, MAG_CS_Pin|MPU_R_Pin|MPU_G_Pin|MPU_B_Pin
-                          |SPU_SELECT_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(MAG_CS_GPIO_Port, MAG_CS_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOE, IMU1_INT_Pin|IMU1_CS_Pin|IMU2_INT_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOE, IMU1_CS_Pin|IMU2_CS_Pin|IMU3_CS_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOD, MPU_CAN_S_Pin|ICP_CS_Pin|ICP_INT_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, MPU_R_Pin|MPU_G_Pin|MPU_B_Pin|SPU_SELECT_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(BMP_CS_GPIO_Port, BMP_CS_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOD, MPU_CAN_S_Pin|ICP_INT_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOD, BMP_CS_Pin|ICP_CS_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin : TPU_SELECT_Pin */
   GPIO_InitStruct.Pin = TPU_SELECT_Pin;
@@ -890,17 +918,17 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : IMU1_INT_Pin IMU1_CS_Pin IMU2_INT_Pin */
-  GPIO_InitStruct.Pin = IMU1_INT_Pin|IMU1_CS_Pin|IMU2_INT_Pin;
+  /*Configure GPIO pins : IMU1_INT_Pin IMU2_INT_Pin IMU3_INT_Pin */
+  GPIO_InitStruct.Pin = IMU1_INT_Pin|IMU2_INT_Pin|IMU3_INT_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : IMU1_CS_Pin IMU2_CS_Pin IMU3_CS_Pin */
+  GPIO_InitStruct.Pin = IMU1_CS_Pin|IMU2_CS_Pin|IMU3_CS_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : IMU2_CS_Pin IMU3_INT_Pin IMU3_CS_Pin */
-  GPIO_InitStruct.Pin = IMU2_CS_Pin|IMU3_INT_Pin|IMU3_CS_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
   /*Configure GPIO pins : MPU_CAN_S_Pin BMP_CS_Pin ICP_CS_Pin ICP_INT_Pin */
@@ -917,7 +945,11 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(BMP_INT_GPIO_Port, &GPIO_InitStruct);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
-
+  
+  /* Enable NVIC interrupt for EXTI15_10 (handles IMU1_INT on PE10, IMU2_INT on PE12, IMU3_INT on PE14) */
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+  
   /* USER CODE END MX_GPIO_Init_2 */
 }
 

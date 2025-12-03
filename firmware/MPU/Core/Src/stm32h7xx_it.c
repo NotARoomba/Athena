@@ -24,6 +24,7 @@
 /* USER CODE BEGIN Includes */
 // #include "driver_bmp388_fifo.h"
 // #include "athena.h"
+#include "imu_interface.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -214,5 +215,28 @@ void OTG_FS_IRQHandler(void)
 }
 
 /* USER CODE BEGIN 1 */
+
+/**
+  * @brief This function handles EXTI line[15:10] interrupts (IMU1_INT, IMU2_INT, IMU3_INT).
+  */
+void EXTI15_10_IRQHandler(void)
+{
+  /* USER CODE BEGIN EXTI15_10_IRQn 0 */
+  
+  /* Check which pin triggered the interrupt */
+  if (__HAL_GPIO_EXTI_GET_IT(IMU1_INT_Pin) != 0x00U) {
+    IMU1_INT_Callback();
+  }
+  
+  /* USER CODE END EXTI15_10_IRQn 0 */
+  
+  /* Handle all pending interrupts on lines 10-15 */
+  HAL_GPIO_EXTI_IRQHandler(IMU1_INT_Pin);
+  HAL_GPIO_EXTI_IRQHandler(IMU2_INT_Pin);
+  HAL_GPIO_EXTI_IRQHandler(IMU3_INT_Pin);
+  
+  /* USER CODE BEGIN EXTI15_10_IRQn 1 */
+  /* USER CODE END EXTI15_10_IRQn 1 */
+}
 
 /* USER CODE END 1 */

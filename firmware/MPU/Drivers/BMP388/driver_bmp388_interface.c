@@ -148,13 +148,13 @@ uint8_t bmp388_interface_spi_read(uint8_t reg, uint8_t *buf, uint16_t len)
     uint8_t reg_addr = reg | 0x80;  // Set MSB for read operation
     
     // Pull CS low
-    HAL_GPIO_WritePin(BMP_CS_GPIO_Port, BMP_CS_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(BMP_CS_GPIO_Port, BMP_CS_Pin, GPIO_PIN_SET);
     
     // Transmit register address
     status = HAL_SPI_Transmit(&hspi4, &reg_addr, 1, 100);
     if (status != HAL_OK) {
         print("BMP388: SPI transmit failed\r\n");
-        HAL_GPIO_WritePin(BMP_CS_GPIO_Port, BMP_CS_Pin, GPIO_PIN_SET);
+        HAL_GPIO_WritePin(BMP_CS_GPIO_Port, BMP_CS_Pin, GPIO_PIN_RESET);
         return 1;
     }
     

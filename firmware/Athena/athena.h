@@ -23,8 +23,20 @@ typedef struct {
 } ICP201_Data;
 
 typedef struct {
+    float gyro_dps[3];         // Gyro data in degrees per second [x, y, z]
+    float accel_g[3];          // Accel data in g [x, y, z]
+    float temperature_c;       // Temperature in Celsius
+    uint32_t timestamp;        // Timestamp in microseconds
+    uint16_t fsync_tag;        // FSYNC tag/counter from IMU
+    uint8_t fsync_event;       // Flag indicating FSYNC event occurred
+} IMU_Data;
+
+typedef struct {
     BMP388_Data bmp388;
     ICP201_Data icp201;
+    IMU_Data imu1;
+    IMU_Data imu2;
+    IMU_Data imu3;
 } Athena_SensorData;
 
 typedef enum {

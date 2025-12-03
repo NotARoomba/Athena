@@ -83,6 +83,7 @@ includeDirectories:
   - ../Athena/**
   - Drivers/BMP388/**
   - Drivers/ICP201xx/**
+  - Drivers/ICM45686/**
 
 # Files that should be included in the compilation.
 # If a CubeMX makefile is present it will automatically include the  c and cpp/cxx files from that makefile.
@@ -98,6 +99,7 @@ sourceFiles:
   - ../Athena/**
   - Drivers/BMP388/**
   - Drivers/ICP201xx/**
+  - Drivers/ICM45686/**
 
 # When no makefile is present it will show a warning pop-up.
 # However when compilation without the CubeMX Makefile is desired, this can be turned of.
