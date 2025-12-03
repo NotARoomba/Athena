@@ -1,6 +1,6 @@
 /*
  * IMU Interface Header for STM32 - ICM-45686
- * Advanced API with FSYNC synchronization
+ * Simple polling-based interface for IMU1
  */
 
 #ifndef IMU_INTERFACE_H
@@ -12,14 +12,11 @@ extern "C" {
 
 #include <stdint.h>
 
-/* Initialize IMU1 with FSYNC */
+/* Initialize IMU1 */
 int IMU_Init(void);
 
-/* Process IMU1 interrupts and FIFO (call from main loop) */
+/* Read and print IMU1 data (call from main loop) */
 void IMU_Process(void);
-
-/* IMU1 interrupt callback (call from EXTI handler) */
-void IMU1_INT_Callback(void);
 
 #ifdef __cplusplus
 }

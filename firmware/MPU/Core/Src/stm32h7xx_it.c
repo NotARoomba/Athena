@@ -223,10 +223,7 @@ void EXTI15_10_IRQHandler(void)
 {
   /* USER CODE BEGIN EXTI15_10_IRQn 0 */
   
-  /* Check which pin triggered the interrupt */
-  if (__HAL_GPIO_EXTI_GET_IT(IMU1_INT_Pin) != 0x00U) {
-    IMU1_INT_Callback();
-  }
+  /* Interrupts disabled - using polling mode */
   
   /* USER CODE END EXTI15_10_IRQn 0 */
   
