@@ -68,8 +68,10 @@ Athena_LED_PinConfig led_pins = {
       .pin_g = MPU_G_Pin,
       .port_b = MPU_B_GPIO_Port,
       .pin_b = MPU_B_Pin
-  };uint8_t gs_fifo_full_flag;
+  };
+uint8_t gs_fifo_full_flag;
 uint8_t gs_fifo_watermark_flag;
+uint8_t gs_data_ready_flag;
 uint16_t i, timeout;
 uint8_t gs_buf[512];
 bmp388_frame_t gs_frame[256];
@@ -89,101 +91,52 @@ static void MX_FDCAN1_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_TIM1_Init(void);
 /* USER CODE BEGIN PFP */
+Athena_SensorData sensor_data = {0};  // Global sensor data structure
+
 void bmp388_fifo_receive_callback(uint8_t type)
 {
     switch (type)
     {
         case BMP388_INTERRUPT_STATUS_FIFO_WATERMARK :
         {
-            uint8_t res;
-            uint16_t len;
-            uint16_t i, frame_len;
-            
-            len = 512;
-            frame_len = 256;
-            res = bmp388_fifo_read(gs_buf, len, (bmp388_frame_t *)gs_frame, (uint16_t *)&frame_len);
-            if (res != 0)
-            {
-                bmp388_interface_debug_print("bmp388: fifo read failed.\n");
-                
-                return;
-            }
-            for (i = 0; i < frame_len; i++)
-            {
-                if (gs_frame[i].type == BMP388_FRAME_TYPE_TEMPERATURE)
-                {
-                    bmp388_interface_debug_print("bmp388: fifo %d/%d.\n", i+1, frame_len);
-                    bmp388_interface_debug_print("bmp388: temperature is %0.2fC.\n", gs_frame[i].data);
-                }
-                else if (gs_frame[i].type == BMP388_FRAME_TYPE_PRESSURE)
-                {
-                    bmp388_interface_debug_print("bmp388: fifo %d/%d.\n", i+1, frame_len);
-                    bmp388_interface_debug_print("bmp388: pressure is %0.2fPa.\n", gs_frame[i].data);
-                }
-                else if (gs_frame[i].type == BMP388_FRAME_TYPE_SENSORTIME)
-                {
-                    bmp388_interface_debug_print("bmp388: fifo %d/%d.\n", i+1, frame_len);
-                    bmp388_interface_debug_print("bmp388: sensortime is %d.\n", gs_frame[i].raw);
-                }
-                else
-                {
-                    bmp388_interface_debug_print("bmp388: fifo %d/%d.\n", i+1, frame_len);
-                    bmp388_interface_debug_print("bmp388: unknow type.\n");
-                }
-            }
             gs_fifo_watermark_flag = 1;
-            
             break;
         }
         case BMP388_INTERRUPT_STATUS_FIFO_FULL :
         {
-            uint8_t res;
-            uint16_t len;
-            uint16_t i, frame_len;
-            
-            len = 512;
-            frame_len = 256;
-            res = bmp388_fifo_read(gs_buf, len, (bmp388_frame_t *)gs_frame, (uint16_t *)&frame_len);
-            if (res != 0)
-            {
-                bmp388_interface_debug_print("bmp388: fifo read failed.\n");
-                
-                return;
-            }
-            for (i = 0; i < frame_len; i++)
-            {
-                if (gs_frame[i].type == BMP388_FRAME_TYPE_TEMPERATURE)
-                {
-                    bmp388_interface_debug_print("bmp388: fifo %d/%d.\n", i+1, frame_len);
-                    bmp388_interface_debug_print("bmp388: temperature is %0.2fC.\n", gs_frame[i].data);
-                }
-                else if (gs_frame[i].type == BMP388_FRAME_TYPE_PRESSURE)
-                {
-                    bmp388_interface_debug_print("bmp388: fifo %d/%d.\n", i+1, frame_len);
-                    bmp388_interface_debug_print("bmp388: pressure is %0.2fPa.\n", gs_frame[i].data);
-                }
-                else if (gs_frame[i].type == BMP388_FRAME_TYPE_SENSORTIME)
-                {
-                    bmp388_interface_debug_print("bmp388: fifo %d/%d.\n", i+1, frame_len);
-                    bmp388_interface_debug_print("bmp388: sensortime is %d.\n", gs_frame[i].raw);
-                }
-                else
-                {
-                    bmp388_interface_debug_print("bmp388: fifo %d/%d.\n", i+1, frame_len);
-                    bmp388_interface_debug_print("bmp388: unknow type.\n");
-                }
-            }
             gs_fifo_full_flag = 1;
-            
             break;
         }
         case BMP388_INTERRUPT_STATUS_DATA_READY :
         {
+            gs_data_ready_flag = 1;
             break;
         }
         default :
         {
             break;
+        }
+    }
+}
+
+void update_bmp388_data(void)
+{
+    uint16_t len = 512;
+    uint16_t frame_len = 256;
+    uint8_t res = bmp388_fifo_read(gs_buf, len, gs_frame, &frame_len);
+    
+    if (res == 0 && frame_len > 0) {
+        // Process frames and update sensor data
+        for (uint16_t i = 0; i < frame_len; i++) {
+            if (gs_frame[i].type == BMP388_FRAME_TYPE_TEMPERATURE) {
+                sensor_data.bmp388.temperature_c = gs_frame[i].data;
+                sensor_data.bmp388.data_ready = 1;
+            } else if (gs_frame[i].type == BMP388_FRAME_TYPE_PRESSURE) {
+                sensor_data.bmp388.pressure_pa = gs_frame[i].data;
+                sensor_data.bmp388.data_ready = 1;
+            } else if (gs_frame[i].type == BMP388_FRAME_TYPE_SENSORTIME) {
+                sensor_data.bmp388.timestamp = gs_frame[i].raw;
+            }
         }
     }
 }
@@ -268,13 +221,11 @@ int main(void)
 bmp_res = bmp388_fifo_init(BMP388_INTERFACE_SPI, BMP388_ADDRESS_ADO_LOW, bmp388_fifo_receive_callback);
 if (bmp_res != 0)
 {
-    char buffer[64];
-    int len = sprintf(buffer, "BMP388 FIFO initialization failed, code: %d\r\n", bmp_res);
-    CDC_Transmit_FS((uint8_t *)buffer, len);
+    print("BMP388 FIFO initialization failed, code: %d\r\n", bmp_res);
 }
 else
 {
-    CDC_Transmit_FS((uint8_t *)"BMP388 FIFO initialized successfully!\r\n", 39);
+    print("BMP388 FIFO initialized successfully!\r\n");
 }
   // ICP201xx CONFIGURATION
   // ICP201xx_t icp_device;
@@ -316,51 +267,47 @@ else
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-
-    Set_LED_Color(LED_GREEN);
-    
-    // Wait for FIFO to accumulate data (polling mode, no interrupts needed)
-    HAL_Delay(1000);
-    
-    // Read BMP388 FIFO
-    if (bmp_res == 0) {
-        uint8_t res;
-        uint16_t len;
-        uint16_t frame_len;
-        
-        len = 512;
-        frame_len = 256;
-        res = bmp388_fifo_read(gs_buf, len, (bmp388_frame_t *)gs_frame, (uint16_t *)&frame_len);
-        if (res != 0)
-        {
-            print("BMP388: FIFO read failed.\r\n");
-        }
-        else
-        {
-            print("BMP388: Read %d frames from FIFO\r\n", frame_len);
-            if (frame_len > 0) {
-                // Print first frame
-                if (gs_frame[0].type == BMP388_FRAME_TYPE_TEMPERATURE)
-                {
-                    print("BMP388: First temp = %0.2fC\r\n", gs_frame[0].data);
-                }
-                else if (gs_frame[0].type == BMP388_FRAME_TYPE_PRESSURE)
-                {
-                    print("BMP388: First pressure = %0.2fPa\r\n", gs_frame[0].data);
-                }
-                
-                // Print last frame
-                if (frame_len > 1 && gs_frame[frame_len-1].type == BMP388_FRAME_TYPE_TEMPERATURE)
-                {
-                    print("BMP388: Last temp = %0.2fC\r\n", gs_frame[frame_len-1].data);
-                }
-                else if (frame_len > 1 && gs_frame[frame_len-1].type == BMP388_FRAME_TYPE_PRESSURE)
-                {
-                    print("BMP388: Last pressure = %0.2fPa\r\n", gs_frame[frame_len-1].data);
-                }
-            }
-        }
+    // Check if BMP388 data is ready (fastest response)
+    if (gs_data_ready_flag) {
+      gs_data_ready_flag = 0;
+      Set_LED_Color(LED_GREEN);
+      
+      // Read fresh data from FIFO
+      update_bmp388_data();
+      
+      // Print sensor data if available
+      if (sensor_data.bmp388.data_ready) {
+        print("BMP388: T=%.2fC P=%.2fPa\r\n", 
+              sensor_data.bmp388.temperature_c, 
+              sensor_data.bmp388.pressure_pa);
+        sensor_data.bmp388.data_ready = 0;
+      }
+      
+      Set_LED_Color(LED_BLUE);
     }
+    
+    // Also check FIFO watermark/full as fallback (slower)
+    if (gs_fifo_watermark_flag || gs_fifo_full_flag) {
+      Set_LED_Color(LED_GREEN);
+      
+      // Update sensor data from FIFO
+      update_bmp388_data();
+      
+      // Print sensor data if available
+      if (sensor_data.bmp388.data_ready) {
+        print("BMP388 FIFO: T=%.2fC P=%.2fPa\r\n", 
+              sensor_data.bmp388.temperature_c, 
+              sensor_data.bmp388.pressure_pa);
+        sensor_data.bmp388.data_ready = 0;
+      }
+      
+      gs_fifo_watermark_flag = 0;
+      gs_fifo_full_flag = 0;
+      Set_LED_Color(LED_BLUE);
+    }
+    
+    HAL_Delay(1);  // Very small delay
+  }
     
     // Read ICP201xx sensor
     // if (icp_res == 0) {
@@ -386,7 +333,7 @@ else
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
-}
+
 
 /**
   * @brief System Clock Configuration
@@ -620,7 +567,7 @@ static void MX_SPI4_Init(void)
   hspi4.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi4.Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi4.Init.NSS = SPI_NSS_SOFT;
-  hspi4.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
+  hspi4.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_4;
   hspi4.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi4.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi4.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;

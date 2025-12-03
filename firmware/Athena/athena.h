@@ -9,6 +9,25 @@ extern "C" {
 
 #include <stdint.h>
 
+// Sensor data structures
+typedef struct {
+    float temperature_c;
+    float pressure_pa;
+    uint32_t timestamp;
+    uint8_t data_ready;
+} BMP388_Data;
+
+typedef struct {
+    float temperature_c;
+    float pressure_kpa;
+    uint32_t timestamp;
+    uint8_t data_ready;
+} ICP201_Data;
+
+typedef struct {
+    BMP388_Data bmp388;
+    ICP201_Data icp201;
+} Athena_SensorData;
 
 typedef enum {
     LED_OFF = 0,

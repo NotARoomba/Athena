@@ -244,7 +244,7 @@ void bmp388_interface_debug_print(const char *const fmt, ...)
     va_start(args, fmt);
     vsnprintf(debug_buffer, sizeof(debug_buffer), fmt, args);
     va_end(args);
-    
+    print("DEBUG PRINT");
     CDC_Transmit_FS((uint8_t*)debug_buffer, strlen(debug_buffer));
 }
 

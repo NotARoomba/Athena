@@ -276,7 +276,7 @@ uint8_t bmp388_fifo_init(bmp388_interface_t interface, bmp388_address_t addr_pin
     }
     
     /* set default interrupt data ready */
-    res = bmp388_set_interrupt_data_ready(&gs_handle,BMP388_FIFO_DEFAULT_INTERRUPT_DATA_READY);
+    res = bmp388_set_interrupt_data_ready(&gs_handle,BMP388_BOOL_TRUE);
     if (res != 0)
     {
         bmp388_interface_debug_print("bmp388: set interrupt data ready failed.\n");
