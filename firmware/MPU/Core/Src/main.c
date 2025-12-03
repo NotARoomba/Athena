@@ -50,8 +50,6 @@
 
 FDCAN_HandleTypeDef hfdcan1;
 
-RTC_HandleTypeDef hrtc;
-
 SPI_HandleTypeDef hspi1;
 SPI_HandleTypeDef hspi3;
 SPI_HandleTypeDef hspi4;
@@ -90,7 +88,6 @@ static void MX_UART4_Init(void);
 static void MX_FDCAN1_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_TIM1_Init(void);
-static void MX_RTC_Init(void);
 static void MX_TIM2_Init(void);
 /* USER CODE BEGIN PFP */
 Athena_SensorData sensor_data = {0};  // Global sensor data structure
@@ -151,7 +148,6 @@ int main(void)
   MX_USART1_UART_Init();
   MX_TIM1_Init();
   MX_USB_DEVICE_Init();
-  MX_RTC_Init();
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
 
@@ -161,17 +157,17 @@ int main(void)
   HAL_Delay(2000);
   
   // BMP388 BASIC MODE CONFIGURATION
-  int bmp_res;
+//   int bmp_res;
 
-bmp_res = bmp388_basic_init(BMP388_INTERFACE_SPI, BMP388_ADDRESS_ADO_LOW);
-if (bmp_res != 0)
-{
-    print("BMP388 basic initialization failed, code: %d\r\n", bmp_res);
-}
-else
-{
-    print("BMP388 basic initialized successfully!\r\n");
-}
+// bmp_res = bmp388_basic_init(BMP388_INTERFACE_SPI, BMP388_ADDRESS_ADO_LOW);
+// if (bmp_res != 0)
+// {
+//     print("BMP388 basic initialization failed, code: %d\r\n", bmp_res);
+// }
+// else
+// {
+//     print("BMP388 basic initialized successfully!\r\n");
+// }
   // ICP201xx CONFIGURATION
   ICP201xx_t icp_device;
   int icp_res;
@@ -212,9 +208,10 @@ else
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    // if (bmp_res == 0 && bmp388_data_ready != 0) {
+    // CHECK THE BMP DRIVER LINE 3299 AS THAT FUNCTION USES WHILE LOOPS, USE THIS ONLY WITH RTOS
+    // if (bmp_res == 0) {
     //   // Clear the flag
-    //   bmp388_data_ready = 0;
+    //   // bmp388_data_ready = 0;
       
     //   // Read from BMP388
     //   float temperature_c, pressure_pa;
@@ -290,11 +287,9 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI48|RCC_OSCILLATORTYPE_HSI
-                              |RCC_OSCILLATORTYPE_LSI;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI48|RCC_OSCILLATORTYPE_HSI;
   RCC_OscInitStruct.HSIState = RCC_HSI_DIV1;
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
-  RCC_OscInitStruct.LSIState = RCC_LSI_ON;
   RCC_OscInitStruct.HSI48State = RCC_HSI48_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
@@ -380,42 +375,6 @@ static void MX_FDCAN1_Init(void)
   /* USER CODE BEGIN FDCAN1_Init 2 */
 
   /* USER CODE END FDCAN1_Init 2 */
-
-}
-
-/**
-  * @brief RTC Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_RTC_Init(void)
-{
-
-  /* USER CODE BEGIN RTC_Init 0 */
-
-  /* USER CODE END RTC_Init 0 */
-
-  /* USER CODE BEGIN RTC_Init 1 */
-
-  /* USER CODE END RTC_Init 1 */
-
-  /** Initialize RTC Only
-  */
-  hrtc.Instance = RTC;
-  hrtc.Init.HourFormat = RTC_HOURFORMAT_24;
-  hrtc.Init.AsynchPrediv = 127;
-  hrtc.Init.SynchPrediv = 255;
-  hrtc.Init.OutPut = RTC_OUTPUT_DISABLE;
-  hrtc.Init.OutPutPolarity = RTC_OUTPUT_POLARITY_HIGH;
-  hrtc.Init.OutPutType = RTC_OUTPUT_TYPE_OPENDRAIN;
-  hrtc.Init.OutPutRemap = RTC_OUTPUT_REMAP_NONE;
-  if (HAL_RTC_Init(&hrtc) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN RTC_Init 2 */
-
-  /* USER CODE END RTC_Init 2 */
 
 }
 
@@ -956,10 +915,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(BMP_INT_GPIO_Port, &GPIO_InitStruct);
-
-  /* EXTI interrupt init*/
-  HAL_NVIC_SetPriority(BMP_INT_EXTI_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(BMP_INT_EXTI_IRQn);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 

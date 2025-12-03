@@ -133,65 +133,65 @@ uint8_t bmp388_basic_init(bmp388_interface_t interface, bmp388_address_t addr_pi
         return 1;
     }
     
-    /* set interrupt pin type */
-    res = bmp388_set_interrupt_pin_type(&gs_handle, BMP388_INTERRUPT_PIN_TYPE_PUSH_PULL);
-    if (res != 0)
-    {
-        bmp388_interface_debug_print("bmp388: set interrupt pin type failed.\n");
-        (void)bmp388_deinit(&gs_handle);
+    // /* set interrupt pin type */
+    // res = bmp388_set_interrupt_pin_type(&gs_handle, BMP388_INTERRUPT_PIN_TYPE_PUSH_PULL);
+    // if (res != 0)
+    // {
+    //     bmp388_interface_debug_print("bmp388: set interrupt pin type failed.\n");
+    //     (void)bmp388_deinit(&gs_handle);
         
-        return 1;
-    }
+    //     return 1;
+    // }
     
-    /* set interrupt active level */
-    res = bmp388_set_interrupt_active_level(&gs_handle, BMP388_INTERRUPT_ACTIVE_LEVEL_HIGHER);
-    if (res != 0)
-    {
-        bmp388_interface_debug_print("bmp388: set interrupt active level failed.\n");
-        (void)bmp388_deinit(&gs_handle);
+    // /* set interrupt active level */
+    // res = bmp388_set_interrupt_active_level(&gs_handle, BMP388_INTERRUPT_ACTIVE_LEVEL_HIGHER);
+    // if (res != 0)
+    // {
+    //     bmp388_interface_debug_print("bmp388: set interrupt active level failed.\n");
+    //     (void)bmp388_deinit(&gs_handle);
         
-        return 1;
-    }
+    //     return 1;
+    // }
     
-    /* set latch interrupt pin and interrupt status */
-    res = bmp388_set_latch_interrupt_pin_and_interrupt_status(&gs_handle, BMP388_BOOL_FALSE);
-    if (res != 0)
-    {
-        bmp388_interface_debug_print("bmp388: set latch interrupt pin and interrupt status failed.\n");
-        (void)bmp388_deinit(&gs_handle);
+    // /* set latch interrupt pin and interrupt status */
+    // res = bmp388_set_latch_interrupt_pin_and_interrupt_status(&gs_handle, BMP388_BOOL_FALSE);
+    // if (res != 0)
+    // {
+    //     bmp388_interface_debug_print("bmp388: set latch interrupt pin and interrupt status failed.\n");
+    //     (void)bmp388_deinit(&gs_handle);
         
-        return 1;
-    }
+    //     return 1;
+    // }
     
-    /* disable interrupt fifo watermark */
-    res = bmp388_set_interrupt_fifo_watermark(&gs_handle, BMP388_BOOL_FALSE);
-    if (res != 0)
-    {
-        bmp388_interface_debug_print("bmp388: set interrupt fifo watermark failed.\n");
-        (void)bmp388_deinit(&gs_handle);
+    // /* disable interrupt fifo watermark */
+    // res = bmp388_set_interrupt_fifo_watermark(&gs_handle, BMP388_BOOL_FALSE);
+    // if (res != 0)
+    // {
+    //     bmp388_interface_debug_print("bmp388: set interrupt fifo watermark failed.\n");
+    //     (void)bmp388_deinit(&gs_handle);
         
-        return 1;
-    }
+    //     return 1;
+    // }
     
-    /* disable interrupt fifo full */
-    res = bmp388_set_interrupt_fifo_full(&gs_handle, BMP388_BOOL_FALSE);
-    if (res != 0)
-    {
-        bmp388_interface_debug_print("bmp388: set interrupt fifo full failed.\n");
-        (void)bmp388_deinit(&gs_handle);
+    // /* disable interrupt fifo full */
+    // res = bmp388_set_interrupt_fifo_full(&gs_handle, BMP388_BOOL_FALSE);
+    // if (res != 0)
+    // {
+    //     bmp388_interface_debug_print("bmp388: set interrupt fifo full failed.\n");
+    //     (void)bmp388_deinit(&gs_handle);
         
-        return 1;
-    }
+    //     return 1;
+    // }
     
-    /* enable interrupt data ready */
-    res = bmp388_set_interrupt_data_ready(&gs_handle,BMP388_BOOL_TRUE);
-    if (res != 0)
-    {
-        bmp388_interface_debug_print("bmp388: set interrupt data ready failed.\n");
-        (void)bmp388_deinit(&gs_handle);
+    // /* enable interrupt data ready */
+    // res = bmp388_set_interrupt_data_ready(&gs_handle,BMP388_BOOL_TRUE);
+    // if (res != 0)
+    // {
+    //     bmp388_interface_debug_print("bmp388: set interrupt data ready failed.\n");
+    //     (void)bmp388_deinit(&gs_handle);
         
-        return 1;
-    }
+    //     return 1;
+    // }
     
     /* set default pressure */
     res = bmp388_set_pressure(&gs_handle, BMP388_BASIC_DEFAULT_PRESSURE);
