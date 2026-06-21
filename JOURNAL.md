@@ -60,4 +60,8 @@ So after talking wiht Claude a Bit I have decided to split up the functionality 
 
 I was thinking that the WB55 could have access ot the parachute charge just in case something goes wrong I can at least fire that from the bottom and yea, I could also hook up its own Barometer or IMU so that it detects at least how high it is and then if its falling and theres no response form the H7 then it can fire the parachute and save the rocket. I could also have it send out a distress signal using the LoRa if something goes wrong and the H7 is not responding.
 
-The H7 should have its own channel sto control pyro and also ESC's just in case I want to turn it into a drone
+The H7 should have its own channels to control pyro and also ESC's just in case I want to turn it into a drone
+
+# Retaking this project
+
+So I want to use the STM32F405 after debating it with claude
