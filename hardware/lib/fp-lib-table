@@ -1,0 +1,10 @@
+(fp_lib_table
+	(version 7)
+	(lib
+		(name "pinforge")
+		(type "KiCad")
+		(uri "${KIPRJMOD}/pinforge.pretty")
+		(options "")
+		(descr "Datasheet-matched footprints from PinForge")
+	)
+)
